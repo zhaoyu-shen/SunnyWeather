@@ -1,6 +1,7 @@
 package com.sunnyweather.android.logic
 
 import androidx.lifecycle.liveData
+import com.sunnyweather.android.logic.dao.PlaceDao
 import com.sunnyweather.android.logic.model.Place
 import com.sunnyweather.android.logic.model.Weather
 import com.sunnyweather.android.logic.network.SunnyWeatherNetWork
@@ -10,50 +11,39 @@ import kotlinx.coroutines.coroutineScope
 import kotlin.coroutines.CoroutineContext
 
 object Repository {
-    fun searchPlaces(query: String) = liveData(Dispatchers.IO) {
-        val result = try {
-            val placeResponse = SunnyWeatherNetWork.searchPlaces(query)
-            if (placeResponse.status == "ok") {
-                val places = placeResponse.places
-                Result.success(places)
-            } else {
-                Result.failure(RuntimeException("response status is ${placeResponse.status}"))
-            }
-        } catch (e: Exception) {
-            Result.failure<List<Place>>(e)
+
+    fun searchPlaces(query: String) = fire(Dispatchers.IO) {
+        val placeResponse = SunnyWeatherNetWork.searchPlaces(query)
+        if (placeResponse.status == "ok") {
+            val places = placeResponse.places
+            Result.success(places)
+        } else {
+            Result.failure(RuntimeException("response status is ${placeResponse.status}"))
         }
-        emit(result)
     }
 
-
-    fun refreshWeather(lng: String, lat: String) = liveData(Dispatchers.IO) {
-        val result = try {
-            coroutineScope {
-                val defferedRealtime = async {
-                    SunnyWeatherNetWork.getRealtimeWeather(lng, lat)
-                }
-                val defferedDaily = async {
-                    SunnyWeatherNetWork.getDailyWeather(lng, lat)
-                }
-                val realtimeResponse = defferedRealtime.await()
-                val dailyResponse = defferedDaily.await()
-                if (realtimeResponse.status == "ok" && dailyResponse.status == "ok") {
-                    val weather =
-                        Weather(realtimeResponse.result.realtime, dailyResponse.result.daily)
-                    Result.success(weather)
-                } else {
-                    Result.failure(
-                        RuntimeException(
-                            "realtime response status is ${realtimeResponse.status}"
-                                    + "daily response status is ${dailyResponse.status}"
-                        )
-                    )
-                }
+    fun refreshWeather(lng: String, lat: String) = fire(Dispatchers.IO) {
+        coroutineScope {
+            val deferredRealtime = async {
+                SunnyWeatherNetWork.getRealtimeWeather(lng, lat)
             }
-        } catch (e: Exception) {
-            Result.failure<Weather>(e)
+            val deferredDaily = async {
+                SunnyWeatherNetWork.getDailyWeather(lng, lat)
+            }
+            val realtimeResponse = deferredRealtime.await()
+            val dailyResponse = deferredDaily.await()
+            if (realtimeResponse.status == "ok" && dailyResponse.status == "ok") {
+                val weather = Weather(realtimeResponse.result.realtime, dailyResponse.result.daily)
+                Result.success(weather)
+            } else {
+                Result.failure(
+                    RuntimeException(
+                        "realtime response status is ${realtimeResponse.status}" +
+                                "daily response status is ${dailyResponse.status}"
+                    )
+                )
+            }
         }
-        emit(result)
     }
 
     private fun<T>fire(context:CoroutineContext,block:suspend ()->Result<T>)=
@@ -65,4 +55,10 @@ object Repository {
             }
             emit(result)
         }
+
+    fun savePlace(place: Place)=PlaceDao.savePlace(place)
+
+    fun getSavedPlace()=PlaceDao.getSavedPlace()
+
+    fun isPlaceSaved()=PlaceDao.isPlaceSaved()
 }

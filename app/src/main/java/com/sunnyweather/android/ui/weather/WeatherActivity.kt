@@ -4,6 +4,7 @@ package com.sunnyweather.android.ui.weather
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
@@ -23,24 +24,28 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class WeatherActivity : AppCompatActivity() {
-    val viewModel by lazy { ViewModelProviders.of(this).get(WeatherViewModel::class.java) }
 
+    val viewModel by lazy { ViewModelProviders.of(this).get(WeatherViewModel::class.java) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val decorView = window.decorView
         decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
         window.statusBarColor= Color.TRANSPARENT
+
         setContentView(R.layout.activity_weather)
+
         if (viewModel.locationLng.isEmpty()) {
             viewModel.locationLng = intent.getStringExtra("location_lng") ?: ""
+
         }
         if (viewModel.locationLat.isEmpty()) {
             viewModel.locationLat = intent.getStringExtra("location_lat") ?: ""
         }
         if (viewModel.placeName.isEmpty()) {
-            viewModel.placeName = intent.getStringExtra("place_naem") ?: ""
+            viewModel.placeName = intent.getStringExtra("place_name") ?: ""
         }
+
         viewModel.weatherLiveData.observe(this, Observer { result ->
             val weather = result.getOrNull()
             if (weather != null) {
@@ -69,6 +74,7 @@ class WeatherActivity : AppCompatActivity() {
         forecastLayout.removeAllViews()
         val days = daily.skycon.size
         for (i in 0 until days) {
+
             val skycon = daily.skycon[i]
             val temperature = daily.temperature[i]
             val view =

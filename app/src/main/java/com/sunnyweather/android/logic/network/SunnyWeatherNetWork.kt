@@ -27,7 +27,6 @@ object SunnyWeatherNetWork {
                     if (body != null) continuation.resume(body)
                     else continuation.resumeWithException(RuntimeException("response body is null"))
                 }
-
                 override fun onFailure(call: Call<T>, t: Throwable) {
                     continuation.resumeWithException(t)
                 }
